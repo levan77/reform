@@ -26,6 +26,8 @@ export interface Listing {
     after:                string[];
     floor_plan_existing:  string;
     floor_plan_optimized: string;
+    /** Current-state photos shown in the property gallery */
+    gallery?:             string[];
   };
   financials: {
     asking_price_gel:           number;

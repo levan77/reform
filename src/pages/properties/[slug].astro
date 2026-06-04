@@ -85,6 +85,47 @@ const l = localizeListing(raw, locale);
             <p>{l.description}</p>
           </div>
 
+          <!-- Current state gallery -->
+          {l.images.gallery && l.images.gallery.length > 0 && (
+            <div class="gallery-section">
+              <div class="flex items-baseline justify-between mb-4">
+                <div>
+                  <p class="text-label text-charcoal/40">{t('detail.currentState')}</p>
+                  <p class="text-xs text-charcoal/30 mt-0.5">{t('detail.currentStateLabel')}</p>
+                </div>
+                <span class="text-label text-charcoal/30">{l.images.gallery.length} {locale === 'ka' ? 'ფოტო' : 'photos'}</span>
+              </div>
+
+              <!-- Responsive grid: 2 cols on mobile, 3 on md+ -->
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {l.images.gallery.map((src, i) => (
+                  <button
+                    class="gallery-thumb group relative overflow-hidden bg-concrete aspect-[4/3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+                    data-src={src}
+                    data-index={i}
+                    aria-label={`${t('detail.currentState')} — photo ${i + 1}`}
+                  >
+                    <img
+                      src={src}
+                      alt={`${l.title} — current state ${i + 1}`}
+                      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    <!-- Hover overlay -->
+                    <div class="absolute inset-0 bg-charcoal/0 group-hover:bg-charcoal/20 transition-colors duration-300 flex items-center justify-center">
+                      <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 drop-shadow-lg"
+                           fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607zM10.5 7.5v6m3-3h-6"/>
+                      </svg>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <!-- Floor plan switcher -->
           <div>
             <p class="text-label text-charcoal/40 mb-3">{t('detail.layout')}</p>
@@ -129,6 +170,99 @@ const l = localizeListing(raw, locale);
 
     </section>
   </main>
+
+  <!-- Lightbox overlay -->
+  <div
+    id="lightbox"
+    class="fixed inset-0 z-[100] bg-black/92 backdrop-blur-sm hidden items-center justify-center"
+    aria-modal="true"
+    role="dialog"
+    aria-label="Photo lightbox"
+  >
+    <!-- Close -->
+    <button id="lb-close"
+      class="absolute top-5 right-5 w-11 h-11 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+      aria-label="Close lightbox">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+
+    <!-- Prev -->
+    <button id="lb-prev"
+      class="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+      aria-label="Previous photo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+      </svg>
+    </button>
+
+    <!-- Image -->
+    <img id="lb-img" src="" alt="" class="max-w-[90vw] max-h-[88vh] object-contain select-none" draggable="false" />
+
+    <!-- Next -->
+    <button id="lb-next"
+      class="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+      aria-label="Next photo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+      </svg>
+    </button>
+
+    <!-- Counter -->
+    <p id="lb-counter" class="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/50 text-sm tabular-nums"></p>
+  </div>
+
+  <script>
+    const lb      = document.getElementById('lightbox')!;
+    const lbImg   = document.getElementById('lb-img') as HTMLImageElement;
+    const lbClose = document.getElementById('lb-close')!;
+    const lbPrev  = document.getElementById('lb-prev')!;
+    const lbNext  = document.getElementById('lb-next')!;
+    const lbCount = document.getElementById('lb-counter')!;
+    const thumbs  = [...document.querySelectorAll<HTMLButtonElement>('.gallery-thumb')];
+
+    if (thumbs.length === 0) {
+      lb.remove();
+    } else {
+      let current = 0;
+      const srcs = thumbs.map(b => b.dataset.src ?? '');
+
+      function show(i: number) {
+        current = (i + srcs.length) % srcs.length;
+        lbImg.src = srcs[current];
+        lbCount.textContent = `${current + 1} / ${srcs.length}`;
+      }
+
+      function open(i: number) {
+        show(i);
+        lb.classList.remove('hidden');
+        lb.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+        lbClose.focus();
+      }
+
+      function close() {
+        lb.classList.add('hidden');
+        lb.classList.remove('flex');
+        document.body.style.overflow = '';
+      }
+
+      thumbs.forEach((btn, i) => btn.addEventListener('click', () => open(i)));
+      lbClose.addEventListener('click', close);
+      lbPrev.addEventListener('click', () => show(current - 1));
+      lbNext.addEventListener('click', () => show(current + 1));
+
+      lb.addEventListener('click', (e) => { if (e.target === lb) close(); });
+
+      document.addEventListener('keydown', (e) => {
+        if (lb.classList.contains('hidden')) return;
+        if (e.key === 'Escape')     close();
+        if (e.key === 'ArrowLeft')  show(current - 1);
+        if (e.key === 'ArrowRight') show(current + 1);
+      });
+    }
+  </script>
 
   <!-- Footer -->
   <footer class="border-t border-hairline border-concrete-dark bg-warm-white mt-16">

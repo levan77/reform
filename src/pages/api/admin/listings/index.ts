@@ -45,6 +45,7 @@ export const POST: APIRoute = async ({ request, redirect, locals }) => {
       after:                toLines(str('after_urls')),
       floor_plan_existing:  str('floor_plan_existing'),
       floor_plan_optimized: str('floor_plan_optimized'),
+      gallery:              toLines(str('gallery_urls')),
     },
     financials: {
       asking_price_gel:           Number(form.get('asking_price')),
