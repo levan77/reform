@@ -17,6 +17,10 @@ const { transparent = false } = Astro.props;
 const otherLocale = locale === 'ka' ? 'en' : 'ka';
 const currentPath = Astro.url.pathname + Astro.url.search;
 const switchHref  = `/api/lang?to=${otherLocale}&from=${encodeURIComponent(currentPath)}`;
+
+// data-solid="false" only while a transparent header sits over the dark hero.
+// JS flips it to "true" on scroll; non-transparent headers are always solid.
+const initialSolid = transparent ? 'false' : 'true';
 ---
 
 <header
@@ -26,6 +30,7 @@ const switchHref  = `/api/lang?to=${otherLocale}&from=${encodeURIComponent(curre
     transparent ? 'bg-transparent' : 'bg-warm-white/90 backdrop-blur-md border-b border-hairline border-concrete-dark',
   ]}
   data-transparent={transparent}
+  data-solid={initialSolid}
 >
   <nav
     class="max-w-screen-xl mx-auto px-6 md:px-10 h-16 flex items-center justify-between"
@@ -33,10 +38,10 @@ const switchHref  = `/api/lang?to=${otherLocale}&from=${encodeURIComponent(curre
   >
     <!-- Logo -->
     <a href="/" class="flex items-baseline gap-2 group" aria-label="ReForma home">
-      <span class="font-serif text-2xl text-charcoal tracking-tight leading-none">
+      <span class="nav-logo font-serif text-2xl text-charcoal tracking-tight leading-none">
         Re<em class="not-italic text-gold">Forma</em>
       </span>
-      <span class="text-label text-charcoal/40 hidden sm:inline">{t('nav.tbilisi')}</span>
+      <span class="nav-sub text-label text-charcoal/40 hidden sm:inline">{t('nav.tbilisi')}</span>
     </a>
 
     <!-- Desktop links -->
@@ -45,7 +50,7 @@ const switchHref  = `/api/lang?to=${otherLocale}&from=${encodeURIComponent(curre
         <li>
           <a
             href={href}
-            class="text-label text-charcoal/60 hover:text-charcoal transition-colors duration-200"
+            class="nav-link text-label text-charcoal/60 hover:text-charcoal transition-colors duration-200"
           >
             {label}
           </a>
@@ -57,7 +62,7 @@ const switchHref  = `/api/lang?to=${otherLocale}&from=${encodeURIComponent(curre
       <!-- Language switcher -->
       <a
         href={switchHref}
-        class="inline-flex items-center gap-1.5 px-2.5 py-2 text-label text-charcoal/60
+        class="nav-lang inline-flex items-center gap-1.5 px-2.5 py-2 text-label text-charcoal/70
                hover:text-charcoal transition-colors duration-200 border border-hairline border-concrete-dark
                hover:border-charcoal/30"
         aria-label={t('nav.switchToFull')}
@@ -75,7 +80,7 @@ const switchHref  = `/api/lang?to=${otherLocale}&from=${encodeURIComponent(curre
       <!-- CTA -->
       <a
         href="/#catalog"
-        class="hidden md:inline-flex items-center gap-2 px-5 py-2.5 bg-charcoal text-warm-white text-label
+        class="nav-cta hidden md:inline-flex items-center gap-2 px-5 py-2.5 bg-charcoal text-warm-white text-label
                hover:bg-charcoal-light transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
       >
         {t('nav.viewProperties')}
@@ -89,9 +94,9 @@ const switchHref  = `/api/lang?to=${otherLocale}&from=${encodeURIComponent(curre
         aria-expanded="false"
         aria-controls="mobile-menu"
       >
-        <span class="block w-5 h-px bg-charcoal transition-transform duration-300" id="ham-top"></span>
-        <span class="block w-5 h-px bg-charcoal transition-opacity duration-300"   id="ham-mid"></span>
-        <span class="block w-5 h-px bg-charcoal transition-transform duration-300" id="ham-bot"></span>
+        <span class="nav-bar block w-5 h-px bg-charcoal transition-transform duration-300" id="ham-top"></span>
+        <span class="nav-bar block w-5 h-px bg-charcoal transition-opacity duration-300"   id="ham-mid"></span>
+        <span class="nav-bar block w-5 h-px bg-charcoal transition-transform duration-300" id="ham-bot"></span>
       </button>
     </div>
   </nav>
@@ -143,17 +148,54 @@ const switchHref  = `/api/lang?to=${otherLocale}&from=${encodeURIComponent(curre
     hamBot.style.transform = open ? 'translateY(-5px) rotate(-45deg)' : '';
   });
 
-  // Scroll-aware transparency (only when header starts transparent)
+  // Scroll-aware: transparent header is light over the hero, solid once scrolled
   if (header.dataset.transparent === 'true') {
     const onScroll = () => {
       const scrolled = window.scrollY > 40;
-      header.classList.toggle('bg-warm-white/90',  scrolled);
-      header.classList.toggle('backdrop-blur-md',   scrolled);
-      header.classList.toggle('border-b',           scrolled);
+      header.dataset.solid = scrolled ? 'true' : 'false';
+      header.classList.toggle('bg-warm-white/90',    scrolled);
+      header.classList.toggle('backdrop-blur-md',     scrolled);
+      header.classList.toggle('border-b',             scrolled);
       header.classList.toggle('border-concrete-dark', scrolled);
-      header.classList.toggle('bg-transparent',    !scrolled);
+      header.classList.toggle('bg-transparent',      !scrolled);
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
   }
 </script>
+
+<style>
+  /* When the header is transparent over the dark hero (data-solid="false"),
+     flip all nav elements to light so they're readable. The solid state keeps
+     the default dark Tailwind styles. */
+  #site-header[data-solid="false"] .nav-logo { color: #fafaf9; }
+  #site-header[data-solid="false"] .nav-sub  { color: rgba(250, 250, 249, 0.55); }
+
+  #site-header[data-solid="false"] .nav-link        { color: rgba(250, 250, 249, 0.8); }
+  #site-header[data-solid="false"] .nav-link:hover  { color: #ffffff; }
+
+  #site-header[data-solid="false"] .nav-lang {
+    color: rgba(250, 250, 249, 0.9);
+    border-color: rgba(250, 250, 249, 0.4);
+  }
+  #site-header[data-solid="false"] .nav-lang:hover {
+    color: #ffffff;
+    border-color: rgba(250, 250, 249, 0.7);
+  }
+
+  /* Light, high-contrast CTA over the dark hero */
+  #site-header[data-solid="false"] .nav-cta {
+    background-color: #fafaf9;
+    color: #1a1a1a;
+  }
+  #site-header[data-solid="false"] .nav-cta:hover {
+    background-color: #ffffff;
+  }
+
+  #site-header[data-solid="false"] .nav-bar { background-color: #fafaf9; }
+
+  /* Smooth the color swap as you scroll */
+  .nav-logo, .nav-sub, .nav-link, .nav-lang, .nav-cta, .nav-bar {
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+  }
+</style>
