@@ -6,7 +6,7 @@ floor-plan switchers, and a financial-potential dashboard.
 
 Bilingual (**Georgian** default + English), with a password-protected admin
 panel for managing listings. Built on **Astro** (SSR) + **Tailwind**, deployed
-to **Cloudflare Pages** with listings stored in **Cloudflare KV**.
+to **Cloudflare Workers** with listings stored in **Cloudflare KV**.
 
 ---
 
@@ -20,7 +20,7 @@ to **Cloudflare Pages** with listings stored in **Cloudflare KV**.
 | Data store     | Cloudflare KV (`LISTINGS` namespace)              |
 | Auth           | HMAC-signed cookie (Web Crypto), single admin password |
 | i18n           | Cookie-based locale (`ka` default, `en`)         |
-| Hosting        | Cloudflare Pages (Git integration)               |
+| Hosting        | Cloudflare Workers (Git integration)             |
 
 ---
 
@@ -44,7 +44,11 @@ for production (see below).
 
 ---
 
-## Deploying to Cloudflare Pages
+## Deploying to Cloudflare Workers
+
+This repo is deployed via **Cloudflare Workers Builds** (Git integration). The
+build runs `npm run build` (Astro → `dist/` + a `.assetsignore`) and deploys
+with `npx wrangler deploy`, configured by `wrangler.toml`.
 
 ### 1. Create the KV namespace (one time)
 
@@ -63,27 +67,28 @@ id = "PASTE_THE_ID_HERE"
 
 Commit and push that change.
 
-### 2. Connect the repo to Pages
+### 2. Connect the repo
 
-1. Cloudflare dashboard → **Workers & Pages** → **Create** → **Pages** →
-   **Connect to Git** → select this repository.
-2. Build settings:
-   - **Framework preset:** Astro
-   - **Build command:** `npm run build`
-   - **Build output directory:** `dist`
-3. **Settings → Functions → KV namespace bindings:** add
-   `LISTINGS` → your namespace (if not already picked up from `wrangler.toml`).
-4. **Settings → Environment variables** (Production *and* Preview):
-   - `ADMIN_PASSWORD` — your real admin password
-   - `SESSION_SECRET` — a long random string (e.g. `openssl rand -base64 32`)
-5. **Settings → Functions → Compatibility flags:** add `nodejs_compat`
-   (also already declared in `wrangler.toml`).
+1. Cloudflare dashboard → **Workers & Pages** → **Create** → **Workers** →
+   **Import a repository** → select this repo.
+2. Build command: `npm run build` · Deploy command: `npx wrangler deploy`
+   (these are the defaults; `wrangler.toml` supplies everything else).
+3. Make sure the Worker **name** matches `name` in `wrangler.toml` (`reform`).
 
-### 3. Deploy
+### 3. Set production secrets
 
-Every push to the default branch triggers a build + deploy automatically.
-The KV store seeds itself on first request, so the catalog is populated
-immediately after the first deploy.
+Worker → **Settings → Variables and Secrets** → add as **encrypted Secret**:
+- `ADMIN_PASSWORD` — your real admin password
+- `SESSION_SECRET` — a long random string (e.g. `openssl rand -base64 32`)
+
+> These are deliberately not in `wrangler.toml` (public repo). Without them the
+> app falls back to the insecure local defaults in `src/lib/runtime.ts`, so
+> **set both before sharing the live URL.**
+
+### 4. Deploy
+
+Every push to the default branch triggers a build + deploy. The KV store seeds
+itself on first request, so the catalog is populated immediately.
 
 > **Note on KV:** writes are strongly consistent within a region and propagate
 > globally within ~60s. For a single-admin listing workflow this is invisible.

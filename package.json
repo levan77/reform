@@ -5,8 +5,9 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
-    "preview": "wrangler pages dev ./dist",
+    "build": "astro build && node ./scripts/postbuild.mjs",
+    "preview": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
     "check": "astro check",
     "kv:create": "wrangler kv namespace create LISTINGS"
   },

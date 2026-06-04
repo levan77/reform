@@ -1,0 +1,6 @@
+# Local development secrets for `astro dev` (Cloudflare platformProxy).
+# Copy this file to `.dev.vars` (which is gitignored) and adjust as needed.
+# In production these are set as encrypted Secrets in the Cloudflare dashboard.
+
+ADMIN_PASSWORD = "reforma2024"
+SESSION_SECRET = "reforma-local-dev-secret-change-in-production"
