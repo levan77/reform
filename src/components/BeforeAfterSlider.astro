@@ -1,12 +1,10 @@
 ---
 /**
- * BeforeAfterSlider
+ * BeforeAfterSlider — both images move
  *
- * When grayscale={true} (default), uses ONE image: left side is desaturated
- * (B&W), right side is full colour. Pass the same URL to beforeSrc & afterSrc,
- * or just use afterSrc — the filter handles the visual split.
- *
- * When grayscale={false}, beforeSrc and afterSrc should be different images.
+ * Both the B&W and colour images translate in opposite directions as you drag,
+ * creating a genuine parallax "both moving" wipe. clip-path handles the reveal;
+ * a slight counter-translate on each image creates the depth illusion.
  */
 
 import { getLocale, useTranslations } from '../lib/i18n';
@@ -18,7 +16,6 @@ interface Props {
   initialPosition?: number;
   aspectRatio?:     string;
   sliderId?:        string;
-  /** Apply CSS grayscale to the left (before) side — default true */
   grayscale?:       boolean;
 }
 
@@ -46,51 +43,49 @@ const rightLabel = grayscale ? t('slider.color') : 'After';
   aria-label={`${leftLabel} and ${rightLabel} comparison of ${alt}`}
   tabindex="0"
 >
-  <!-- RIGHT side — full colour image, fills container -->
-  <img
-    src={afterSrc}
-    alt={`${rightLabel}: ${alt}`}
-    class="absolute inset-0 w-full h-full object-cover pointer-events-none"
-    loading="lazy"
-    decoding="async"
-    draggable="false"
-  />
-
-  <!-- LEFT side — same (or different) image, clipped and desaturated -->
-  <div
-    class="bas-clip absolute inset-y-0 left-0 overflow-hidden pointer-events-none"
-    style={`width: ${initialPosition}%;`}
-  >
+  <!-- LEFT image (B&W) — clipped to left of divider, slides rightward as pct grows -->
+  <div class="bas-left-wrap absolute inset-0 pointer-events-none will-change-transform">
     <img
       src={beforeSrc}
       alt={`${leftLabel}: ${alt}`}
-      class="bas-clip-img absolute inset-0 h-full object-cover pointer-events-none"
-      style={grayscale ? 'filter: grayscale(1) brightness(0.82) contrast(1.05);' : ''}
+      class="absolute inset-0 w-full h-full object-cover"
+      style={grayscale ? 'filter: grayscale(1) brightness(0.82) contrast(1.05); transform: scale(1.06);' : 'transform: scale(1.06);'}
       loading="lazy"
       decoding="async"
       draggable="false"
     />
   </div>
 
-  <!-- Divider -->
+  <!-- RIGHT image (colour) — clipped to right of divider, slides leftward as pct grows -->
+  <div class="bas-right-wrap absolute inset-0 pointer-events-none will-change-transform">
+    <img
+      src={afterSrc}
+      alt={`${rightLabel}: ${alt}`}
+      class="absolute inset-0 w-full h-full object-cover"
+      style="transform: scale(1.06);"
+      loading="lazy"
+      decoding="async"
+      draggable="false"
+    />
+  </div>
+
+  <!-- Divider line + handle -->
   <div
-    class="bas-divider absolute inset-y-0 w-px bg-white/90 shadow-[0_0_16px_rgba(0,0,0,0.3)] pointer-events-none"
+    class="bas-divider absolute inset-y-0 w-px bg-white shadow-[0_0_20px_rgba(255,255,255,0.6),0_0_4px_rgba(0,0,0,0.4)] pointer-events-none z-20"
     style={`left: ${initialPosition}%;`}
     aria-hidden="true"
   >
-    <!-- Handle -->
     <div class="
       bas-handle
       absolute top-1/2 left-1/2
       -translate-x-1/2 -translate-y-1/2
-      w-11 h-11 rounded-full bg-white
-      shadow-[0_2px_20px_rgba(0,0,0,0.25)]
-      flex items-center justify-center
-      transition-transform duration-150 ease-out
+      w-12 h-12 rounded-full bg-white
+      shadow-[0_4px_24px_rgba(0,0,0,0.35)]
+      flex items-center justify-center z-20
     ">
-      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-        <path d="M9 5L4 11L9 17"  stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M13 5L18 11L13 17" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M10 6L5 12L10 18"  stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M14 6L19 12L14 18" stroke="#1a1a1a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
   </div>
@@ -104,16 +99,6 @@ const rightLabel = grayscale ? t('slider.color') : 'After';
     absolute bottom-4 right-4 z-10 pointer-events-none
     text-label text-white bg-black/55 backdrop-blur-sm px-3 py-1.5
   ">{rightLabel}</span>
-
-  <!-- Colour hint strip (grayscale mode only) — thin gradient at divider -->
-  {grayscale && (
-    <div
-      class="bas-hint absolute inset-y-0 w-12 pointer-events-none opacity-0 transition-opacity duration-300"
-      style={`left: calc(${initialPosition}% - 24px);
-              background: linear-gradient(to right, rgba(0,0,0,0.08), transparent);`}
-      aria-hidden="true"
-    />
-  )}
 </div>
 
 <script>
@@ -122,68 +107,70 @@ const rightLabel = grayscale ? t('slider.color') : 'After';
   }
 
   function initSlider(root: HTMLElement): void {
-    const clip    = root.querySelector('.bas-clip')     as HTMLElement | null;
-    const clipImg = root.querySelector('.bas-clip-img') as HTMLImageElement | null;
-    const divider = root.querySelector('.bas-divider')  as HTMLElement | null;
-    const handle  = root.querySelector('.bas-handle')   as HTMLElement | null;
-    const hint    = root.querySelector('.bas-hint')     as HTMLElement | null;
+    const leftWrap  = root.querySelector('.bas-left-wrap')  as HTMLElement | null;
+    const rightWrap = root.querySelector('.bas-right-wrap') as HTMLElement | null;
+    const divider   = root.querySelector('.bas-divider')    as HTMLElement | null;
+    const handle    = root.querySelector('.bas-handle')     as HTMLElement | null;
 
-    if (!clip || !clipImg || !divider || !handle) return;
+    if (!leftWrap || !rightWrap || !divider || !handle) return;
 
+    // How far each image slides (% of container width). Scaled images
+    // absorb this shift without empty edges.
+    const PARALLAX = 4; // percent of container
+
+    let pct     = Number(root.dataset.initial ?? 50);
     let dragging = false;
-    let rafId    = 0;
+    let rafId   = 0;
 
-    function syncImageWidth(): void {
-      clipImg.style.width = root.offsetWidth + 'px';
+    function applyPosition(p: number): void {
+      // clip-path reveals the respective half of each wrapper
+      leftWrap.style.clipPath  = `inset(0 ${100 - p}% 0 0)`;
+      rightWrap.style.clipPath = `inset(0 0 0 ${p}%)`;
+
+      // Both images counter-translate — left shifts right as pct grows,
+      // right shifts left, so both images "slide" toward the divider.
+      const shift = (p - 50) * (PARALLAX / 50); // –PARALLAX … +PARALLAX
+      leftWrap.style.transform  = `translateX(${shift}%)`;
+      rightWrap.style.transform = `translateX(${-shift}%)`;
+
+      divider.style.left = p + '%';
     }
-    syncImageWidth();
 
-    const ro = new ResizeObserver(syncImageWidth);
-    ro.observe(root);
+    // Init
+    applyPosition(pct);
 
-    function setPosition(clientX: number): void {
+    function onMove(clientX: number): void {
       const rect = root.getBoundingClientRect();
-      const pct  = clamp(((clientX - rect.left) / rect.width) * 100, 1, 99);
+      pct = clamp(((clientX - rect.left) / rect.width) * 100, 1, 99);
       cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        const val           = pct + '%';
-        clip.style.width    = val;
-        divider.style.left  = val;
-        if (hint) hint.style.left = `calc(${val} - 24px)`;
-      });
+      rafId = requestAnimationFrame(() => applyPosition(pct));
     }
 
     // Mouse
     root.addEventListener('mousedown', (e: MouseEvent) => {
       dragging = true;
       handle.style.transform = 'translate(-50%,-50%) scale(1.12)';
-      if (hint) hint.style.opacity = '1';
-      setPosition(e.clientX);
+      onMove(e.clientX);
       e.preventDefault();
     });
-
     window.addEventListener('mousemove', (e: MouseEvent) => {
-      if (dragging) setPosition(e.clientX);
+      if (dragging) onMove(e.clientX);
     });
-
     window.addEventListener('mouseup', () => {
       if (!dragging) return;
       dragging = false;
       handle.style.transform = '';
-      if (hint) hint.style.opacity = '0';
     });
 
     // Touch
     root.addEventListener('touchstart', (e: TouchEvent) => {
       dragging = true;
       handle.style.transform = 'translate(-50%,-50%) scale(1.12)';
-      setPosition(e.touches[0].clientX);
+      onMove(e.touches[0].clientX);
     }, { passive: true });
-
     window.addEventListener('touchmove', (e: TouchEvent) => {
-      if (dragging) setPosition(e.touches[0].clientX);
+      if (dragging) onMove(e.touches[0].clientX);
     }, { passive: true });
-
     window.addEventListener('touchend', () => {
       if (!dragging) return;
       dragging = false;
@@ -194,13 +181,9 @@ const rightLabel = grayscale ? t('slider.color') : 'After';
     root.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
       e.preventDefault();
-      const cur  = parseFloat(divider.style.left) || Number(root.dataset.initial ?? 50);
       const step = e.shiftKey ? 10 : 2;
-      const next = clamp(cur + (e.key === 'ArrowRight' ? step : -step), 1, 99);
-      const val  = next + '%';
-      clip.style.width   = val;
-      divider.style.left = val;
-      if (hint) hint.style.left = `calc(${val} - 24px)`;
+      pct = clamp(pct + (e.key === 'ArrowRight' ? step : -step), 1, 99);
+      applyPosition(pct);
     });
   }
 
@@ -212,5 +195,8 @@ const rightLabel = grayscale ? t('slider.color') : 'After';
     outline: 2px solid #b8965a;
     outline-offset: 2px;
   }
-
+  .bas-left-wrap,
+  .bas-right-wrap {
+    transition: clip-path 0s, transform 0s; /* rAF handles timing */
+  }
 </style>
