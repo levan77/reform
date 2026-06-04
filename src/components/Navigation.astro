@@ -165,6 +165,22 @@ const initialSolid = transparent ? 'false' : 'true';
 </script>
 
 <style>
+  /* Solid header (white pages + scrolled hero): give it a clear opaque
+     background and a soft shadow so the bar is visibly separated from white
+     page content. */
+  #site-header[data-solid="true"] {
+    background-color: #faf9f7;
+    border-bottom-color: rgba(26, 26, 26, 0.10);
+    box-shadow:
+      0 1px 0 0 rgba(26, 26, 26, 0.06),
+      0 6px 22px -10px rgba(26, 26, 26, 0.18);
+  }
+
+  /* No shadow while transparent over the hero */
+  #site-header[data-solid="false"] {
+    box-shadow: none;
+  }
+
   /* When the header is transparent over the dark hero (data-solid="false"),
      flip all nav elements to light so they're readable. The solid state keeps
      the default dark Tailwind styles. */
