@@ -22,7 +22,7 @@ binding = "ASSETS"
 # Create with:  npm run kv:create   then paste the id below.
 [[kv_namespaces]]
 binding = "LISTINGS"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+id = "d84744892b5c4e8b87d5c5526efc1e3b"
 
 # ─── Secrets (NOT committed) ─────────────────────────────────────────────────
 # ADMIN_PASSWORD and SESSION_SECRET are intentionally NOT defined here so they
