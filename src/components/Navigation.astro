@@ -11,26 +11,19 @@ const links = [
   { label: t('nav.contact'), href: '/contact'  },
 ];
 
+// `transparent` kept for API compatibility; the header is now always a solid
+// dark bar so it's clearly visible on every background.
 const { transparent = false } = Astro.props;
+void transparent;
 
-// Build the language-switch URL: toggle to the other locale, return to current page
 const otherLocale = locale === 'ka' ? 'en' : 'ka';
 const currentPath = Astro.url.pathname + Astro.url.search;
 const switchHref  = `/api/lang?to=${otherLocale}&from=${encodeURIComponent(currentPath)}`;
-
-// data-solid="false" only while a transparent header sits over the dark hero.
-// JS flips it to "true" on scroll; non-transparent headers are always solid.
-const initialSolid = transparent ? 'false' : 'true';
 ---
 
 <header
   id="site-header"
-  class:list={[
-    'fixed top-0 inset-x-0 z-50 transition-all duration-500',
-    transparent ? 'bg-transparent' : 'bg-warm-white/90 backdrop-blur-md border-b border-hairline border-concrete-dark',
-  ]}
-  data-transparent={transparent}
-  data-solid={initialSolid}
+  class="fixed top-0 inset-x-0 z-50 bg-charcoal border-b border-white/10 shadow-[0_2px_18px_-6px_rgba(0,0,0,0.5)]"
 >
   <nav
     class="max-w-screen-xl mx-auto px-6 md:px-10 h-16 flex items-center justify-between"
@@ -38,10 +31,10 @@ const initialSolid = transparent ? 'false' : 'true';
   >
     <!-- Logo -->
     <a href="/" class="flex items-baseline gap-2 group" aria-label="ReForma home">
-      <span class="nav-logo font-serif text-2xl text-charcoal tracking-tight leading-none">
+      <span class="font-serif text-2xl text-warm-white tracking-tight leading-none">
         Re<em class="not-italic text-gold">Forma</em>
       </span>
-      <span class="nav-sub text-label text-charcoal/40 hidden sm:inline">{t('nav.tbilisi')}</span>
+      <span class="text-label text-warm-white/45 hidden sm:inline">{t('nav.tbilisi')}</span>
     </a>
 
     <!-- Desktop links -->
@@ -50,7 +43,7 @@ const initialSolid = transparent ? 'false' : 'true';
         <li>
           <a
             href={href}
-            class="nav-link text-label text-charcoal/60 hover:text-charcoal transition-colors duration-200"
+            class="text-label text-warm-white/70 hover:text-warm-white transition-colors duration-200"
           >
             {label}
           </a>
@@ -62,13 +55,12 @@ const initialSolid = transparent ? 'false' : 'true';
       <!-- Language switcher -->
       <a
         href={switchHref}
-        class="nav-lang inline-flex items-center gap-1.5 px-2.5 py-2 text-label text-charcoal/70
-               hover:text-charcoal transition-colors duration-200 border border-hairline border-concrete-dark
-               hover:border-charcoal/30"
+        class="inline-flex items-center gap-1.5 px-2.5 py-2 text-label text-warm-white/80
+               hover:text-warm-white transition-colors duration-200 border border-white/25
+               hover:border-white/50"
         aria-label={t('nav.switchToFull')}
         title={t('nav.switchToFull')}
       >
-        <!-- Globe icon -->
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.1"/>
           <path d="M1.75 8h12.5M8 1.75c1.8 1.6 2.8 3.9 2.8 6.25S9.8 12.65 8 14.25c-1.8-1.6-2.8-3.9-2.8-6.25S6.2 3.35 8 1.75Z"
@@ -80,8 +72,8 @@ const initialSolid = transparent ? 'false' : 'true';
       <!-- CTA -->
       <a
         href="/#catalog"
-        class="nav-cta hidden md:inline-flex items-center gap-2 px-5 py-2.5 bg-charcoal text-warm-white text-label
-               hover:bg-charcoal-light transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+        class="hidden md:inline-flex items-center gap-2 px-5 py-2.5 bg-gold text-charcoal text-label
+               hover:bg-gold-light transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-warm-white"
       >
         {t('nav.viewProperties')}
       </a>
@@ -94,9 +86,9 @@ const initialSolid = transparent ? 'false' : 'true';
         aria-expanded="false"
         aria-controls="mobile-menu"
       >
-        <span class="nav-bar block w-5 h-px bg-charcoal transition-transform duration-300" id="ham-top"></span>
-        <span class="nav-bar block w-5 h-px bg-charcoal transition-opacity duration-300"   id="ham-mid"></span>
-        <span class="nav-bar block w-5 h-px bg-charcoal transition-transform duration-300" id="ham-bot"></span>
+        <span class="block w-5 h-px bg-warm-white transition-transform duration-300" id="ham-top"></span>
+        <span class="block w-5 h-px bg-warm-white transition-opacity duration-300"   id="ham-mid"></span>
+        <span class="block w-5 h-px bg-warm-white transition-transform duration-300" id="ham-bot"></span>
       </button>
     </div>
   </nav>
@@ -104,7 +96,7 @@ const initialSolid = transparent ? 'false' : 'true';
   <!-- Mobile menu -->
   <div
     id="mobile-menu"
-    class="md:hidden hidden bg-warm-white border-t border-hairline border-concrete-dark"
+    class="md:hidden hidden bg-charcoal border-t border-white/10"
     aria-hidden="true"
   >
     <ul class="flex flex-col px-6 py-4 gap-1" role="list">
@@ -112,7 +104,7 @@ const initialSolid = transparent ? 'false' : 'true';
         <li>
           <a
             href={href}
-            class="block py-3 text-label text-charcoal/70 hover:text-charcoal border-b border-hairline border-concrete-dark last:border-0"
+            class="block py-3 text-label text-warm-white/75 hover:text-warm-white border-b border-white/10 last:border-0"
           >
             {label}
           </a>
@@ -121,7 +113,7 @@ const initialSolid = transparent ? 'false' : 'true';
       <li class="pt-2">
         <a
           href="/#catalog"
-          class="block w-full text-center py-3 bg-charcoal text-warm-white text-label"
+          class="block w-full text-center py-3 bg-gold text-charcoal text-label"
         >
           {t('nav.viewProperties')}
         </a>
@@ -136,9 +128,7 @@ const initialSolid = transparent ? 'false' : 'true';
   const hamTop = document.getElementById('ham-top')!;
   const hamMid = document.getElementById('ham-mid')!;
   const hamBot = document.getElementById('ham-bot')!;
-  const header = document.getElementById('site-header')!;
 
-  // Toggle mobile menu
   btn.addEventListener('click', () => {
     const open = menu.classList.toggle('hidden') === false;
     btn.setAttribute('aria-expanded', String(open));
@@ -147,71 +137,4 @@ const initialSolid = transparent ? 'false' : 'true';
     hamMid.style.opacity   = open ? '0' : '1';
     hamBot.style.transform = open ? 'translateY(-5px) rotate(-45deg)' : '';
   });
-
-  // Scroll-aware: transparent header is light over the hero, solid once scrolled
-  if (header.dataset.transparent === 'true') {
-    const onScroll = () => {
-      const scrolled = window.scrollY > 40;
-      header.dataset.solid = scrolled ? 'true' : 'false';
-      header.classList.toggle('bg-warm-white/90',    scrolled);
-      header.classList.toggle('backdrop-blur-md',     scrolled);
-      header.classList.toggle('border-b',             scrolled);
-      header.classList.toggle('border-concrete-dark', scrolled);
-      header.classList.toggle('bg-transparent',      !scrolled);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-  }
 </script>
-
-<style>
-  /* Solid header (white pages + scrolled hero): give it a clear opaque
-     background and a soft shadow so the bar is visibly separated from white
-     page content. */
-  #site-header[data-solid="true"] {
-    background-color: #faf9f7;
-    border-bottom-color: rgba(26, 26, 26, 0.10);
-    box-shadow:
-      0 1px 0 0 rgba(26, 26, 26, 0.06),
-      0 6px 22px -10px rgba(26, 26, 26, 0.18);
-  }
-
-  /* No shadow while transparent over the hero */
-  #site-header[data-solid="false"] {
-    box-shadow: none;
-  }
-
-  /* When the header is transparent over the dark hero (data-solid="false"),
-     flip all nav elements to light so they're readable. The solid state keeps
-     the default dark Tailwind styles. */
-  #site-header[data-solid="false"] .nav-logo { color: #fafaf9; }
-  #site-header[data-solid="false"] .nav-sub  { color: rgba(250, 250, 249, 0.55); }
-
-  #site-header[data-solid="false"] .nav-link        { color: rgba(250, 250, 249, 0.8); }
-  #site-header[data-solid="false"] .nav-link:hover  { color: #ffffff; }
-
-  #site-header[data-solid="false"] .nav-lang {
-    color: rgba(250, 250, 249, 0.9);
-    border-color: rgba(250, 250, 249, 0.4);
-  }
-  #site-header[data-solid="false"] .nav-lang:hover {
-    color: #ffffff;
-    border-color: rgba(250, 250, 249, 0.7);
-  }
-
-  /* Light, high-contrast CTA over the dark hero */
-  #site-header[data-solid="false"] .nav-cta {
-    background-color: #fafaf9;
-    color: #1a1a1a;
-  }
-  #site-header[data-solid="false"] .nav-cta:hover {
-    background-color: #ffffff;
-  }
-
-  #site-header[data-solid="false"] .nav-bar { background-color: #fafaf9; }
-
-  /* Smooth the color swap as you scroll */
-  .nav-logo, .nav-sub, .nav-link, .nav-lang, .nav-cta, .nav-bar {
-    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
-  }
-</style>
