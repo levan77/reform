@@ -1,0 +1,167 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getListings } from '../../lib/db';
+import { getKV } from '../../lib/runtime';
+
+const listings = await getListings(getKV(Astro.locals));
+const toast    = Astro.url.searchParams.get('created') ? 'Listing created successfully.'
+               : Astro.url.searchParams.get('updated') ? 'Listing updated.'
+               : Astro.url.searchParams.get('deleted') ? 'Listing deleted.'
+               : null;
+
+const gel = (n: number) =>
+  new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GEL',
+    notation: 'compact', maximumFractionDigits: 0 }).format(n).replace('GEL', '₾');
+---
+
+<AdminLayout title="Dashboard">
+
+  <!-- Page header -->
+  <div class="flex items-end justify-between mb-8">
+    <div>
+      <p class="text-label text-charcoal/40 mb-1">Admin</p>
+      <h1 class="font-serif text-4xl text-charcoal">Listings</h1>
+    </div>
+    <a href="/admin/listings/new"
+       class="inline-flex items-center gap-2 px-5 py-2.5 bg-charcoal text-warm-white text-label
+              hover:bg-charcoal-light transition-colors">
+      + Add Listing
+    </a>
+  </div>
+
+  <!-- Toast -->
+  {toast && (
+    <div id="toast"
+         class="mb-6 px-4 py-3 bg-charcoal text-warm-white text-sm flex items-center justify-between">
+      <span>{toast}</span>
+      <button onclick="document.getElementById('toast').remove()"
+              class="text-warm-white/40 hover:text-warm-white ml-6">✕</button>
+    </div>
+  )}
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-px bg-concrete-dark mb-8">
+    {[
+      { label: 'Total Listings',  value: listings.length },
+      { label: 'Featured',        value: listings.filter(l => l.featured).length },
+      { label: 'Total Ask Value', value: gel(listings.reduce((s, l) => s + l.financials.asking_price_gel, 0)) },
+      { label: 'Avg. ROI',
+        value: listings.length
+          ? Math.round(listings.reduce((s, l) => {
+              const gain = l.financials.post_reno_market_value_gel
+                         - l.financials.asking_price_gel
+                         - l.financials.renovation_estimate_gel;
+              const invest = l.financials.asking_price_gel + l.financials.renovation_estimate_gel;
+              return s + (gain / invest) * 100;
+            }, 0) / listings.length) + '%'
+          : '—'
+      },
+    ].map(s => (
+      <div class="bg-warm-white p-5">
+        <p class="text-label text-charcoal/40 mb-1">{s.label}</p>
+        <p class="font-serif text-3xl text-charcoal">{s.value}</p>
+      </div>
+    ))}
+  </div>
+
+  <!-- Listings table -->
+  {listings.length === 0 ? (
+    <div class="bg-warm-white border border-hairline border-concrete-dark py-20 text-center">
+      <p class="text-charcoal/40 mb-4">No listings yet.</p>
+      <a href="/admin/listings/new"
+         class="inline-block px-5 py-2.5 bg-charcoal text-warm-white text-label">
+        Add Your First Listing
+      </a>
+    </div>
+  ) : (
+    <div class="bg-warm-white border border-hairline border-concrete-dark overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="border-b border-hairline border-concrete-dark">
+          <tr>
+            {['Property', 'District', 'Size', 'Ask Price', 'ROI', 'Featured', ''].map(h => (
+              <th class="text-left text-label text-charcoal/40 px-5 py-3 font-normal whitespace-nowrap first:pl-5">
+                {h}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-hairline divide-concrete-dark">
+          {listings.map(l => {
+            const gain    = l.financials.post_reno_market_value_gel
+                          - l.financials.asking_price_gel
+                          - l.financials.renovation_estimate_gel;
+            const invest  = l.financials.asking_price_gel + l.financials.renovation_estimate_gel;
+            const roi     = Math.round((gain / invest) * 100);
+            return (
+              <tr class="hover:bg-concrete/50 transition-colors group">
+                <td class="px-5 py-4">
+                  <div class="flex items-center gap-3">
+                    {l.images.cover && (
+                      <img src={`${l.images.cover}&w=60&h=60&fit=crop`}
+                           alt="" class="w-10 h-10 object-cover rounded-sm flex-shrink-0"
+                           loading="lazy" />
+                    )}
+                    <div>
+                      <a href={`/properties/${l.slug}`} target="_blank"
+                         class="font-medium text-charcoal hover:text-charcoal/70 transition-colors">
+                        {l.title}
+                      </a>
+                      <p class="text-xs text-charcoal/40 mt-0.5">{l.address}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-5 py-4 text-charcoal/60 whitespace-nowrap">{l.district}</td>
+                <td class="px-5 py-4 text-charcoal/60 whitespace-nowrap">{l.size_sqm} m²</td>
+                <td class="px-5 py-4 font-medium text-charcoal whitespace-nowrap tabular-nums">
+                  {gel(l.financials.asking_price_gel)}
+                </td>
+                <td class="px-5 py-4 whitespace-nowrap">
+                  <span class:list={[
+                    'text-label px-2 py-1',
+                    roi >= 50 ? 'bg-green-50 text-green-700' :
+                    roi >= 25 ? 'bg-gold/10 text-gold' :
+                    'bg-concrete text-charcoal/50'
+                  ]}>
+                    +{roi}%
+                  </span>
+                </td>
+                <td class="px-5 py-4">
+                  {l.featured && (
+                    <span class="text-label bg-charcoal text-warm-white px-2 py-1">Featured</span>
+                  )}
+                </td>
+                <td class="px-5 py-4">
+                  <div class="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <a href={`/admin/listings/${l.id}/edit`}
+                       class="text-label text-charcoal/50 hover:text-charcoal transition-colors">
+                      Edit
+                    </a>
+                    <button
+                      class="text-label text-red-400 hover:text-red-600 transition-colors"
+                      data-delete-id={l.id}
+                      data-delete-title={l.title}>
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  )}
+<script>
+  document.querySelectorAll('[data-delete-id]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id    = (btn as HTMLElement).dataset.deleteId!;
+      const title = (btn as HTMLElement).dataset.deleteTitle!;
+      if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+      const res = await fetch(`/api/admin/listings/${id}`, { method: 'DELETE' });
+      if (res.redirected) window.location.href = res.url;
+      else window.location.href = '/admin/dashboard?deleted=1';
+    });
+  });
+</script>
+
+</AdminLayout>

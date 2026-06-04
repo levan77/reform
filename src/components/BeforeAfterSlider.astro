@@ -1,0 +1,216 @@
+---
+/**
+ * BeforeAfterSlider
+ *
+ * When grayscale={true} (default), uses ONE image: left side is desaturated
+ * (B&W), right side is full colour. Pass the same URL to beforeSrc & afterSrc,
+ * or just use afterSrc — the filter handles the visual split.
+ *
+ * When grayscale={false}, beforeSrc and afterSrc should be different images.
+ */
+
+import { getLocale, useTranslations } from '../lib/i18n';
+
+interface Props {
+  beforeSrc:        string;
+  afterSrc:         string;
+  alt?:             string;
+  initialPosition?: number;
+  aspectRatio?:     string;
+  sliderId?:        string;
+  /** Apply CSS grayscale to the left (before) side — default true */
+  grayscale?:       boolean;
+}
+
+const {
+  beforeSrc,
+  afterSrc,
+  alt             = 'Property',
+  initialPosition = 50,
+  aspectRatio     = '4/3',
+  sliderId        = `bas-${Math.random().toString(36).slice(2, 8)}`,
+  grayscale       = true,
+} = Astro.props;
+
+const t          = useTranslations(getLocale(Astro.request));
+const leftLabel  = grayscale ? t('slider.bw')    : 'Before';
+const rightLabel = grayscale ? t('slider.color') : 'After';
+---
+
+<div
+  class="bas-root relative w-full overflow-hidden select-none cursor-ew-resize bg-concrete"
+  style={`aspect-ratio: ${aspectRatio};`}
+  data-slider-id={sliderId}
+  data-initial={initialPosition}
+  role="img"
+  aria-label={`${leftLabel} and ${rightLabel} comparison of ${alt}`}
+  tabindex="0"
+>
+  <!-- RIGHT side — full colour image, fills container -->
+  <img
+    src={afterSrc}
+    alt={`${rightLabel}: ${alt}`}
+    class="absolute inset-0 w-full h-full object-cover pointer-events-none"
+    loading="lazy"
+    decoding="async"
+    draggable="false"
+  />
+
+  <!-- LEFT side — same (or different) image, clipped and desaturated -->
+  <div
+    class="bas-clip absolute inset-y-0 left-0 overflow-hidden pointer-events-none"
+    style={`width: ${initialPosition}%;`}
+  >
+    <img
+      src={beforeSrc}
+      alt={`${leftLabel}: ${alt}`}
+      class="bas-clip-img absolute inset-0 h-full object-cover pointer-events-none"
+      style={grayscale ? 'filter: grayscale(1) brightness(0.82) contrast(1.05);' : ''}
+      loading="lazy"
+      decoding="async"
+      draggable="false"
+    />
+  </div>
+
+  <!-- Divider -->
+  <div
+    class="bas-divider absolute inset-y-0 w-px bg-white/90 shadow-[0_0_16px_rgba(0,0,0,0.3)] pointer-events-none"
+    style={`left: ${initialPosition}%;`}
+    aria-hidden="true"
+  >
+    <!-- Handle -->
+    <div class="
+      bas-handle
+      absolute top-1/2 left-1/2
+      -translate-x-1/2 -translate-y-1/2
+      w-11 h-11 rounded-full bg-white
+      shadow-[0_2px_20px_rgba(0,0,0,0.25)]
+      flex items-center justify-center
+      transition-transform duration-150 ease-out
+    ">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+        <path d="M9 5L4 11L9 17"  stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M13 5L18 11L13 17" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Labels -->
+  <span class="
+    absolute bottom-4 left-4 z-10 pointer-events-none
+    text-label text-white bg-black/55 backdrop-blur-sm px-3 py-1.5
+  ">{leftLabel}</span>
+  <span class="
+    absolute bottom-4 right-4 z-10 pointer-events-none
+    text-label text-white bg-black/55 backdrop-blur-sm px-3 py-1.5
+  ">{rightLabel}</span>
+
+  <!-- Colour hint strip (grayscale mode only) — thin gradient at divider -->
+  {grayscale && (
+    <div
+      class="bas-hint absolute inset-y-0 w-12 pointer-events-none opacity-0 transition-opacity duration-300"
+      style={`left: calc(${initialPosition}% - 24px);
+              background: linear-gradient(to right, rgba(0,0,0,0.08), transparent);`}
+      aria-hidden="true"
+    />
+  )}
+</div>
+
+<script>
+  function clamp(v: number, lo: number, hi: number): number {
+    return Math.min(hi, Math.max(lo, v));
+  }
+
+  function initSlider(root: HTMLElement): void {
+    const clip    = root.querySelector('.bas-clip')     as HTMLElement | null;
+    const clipImg = root.querySelector('.bas-clip-img') as HTMLImageElement | null;
+    const divider = root.querySelector('.bas-divider')  as HTMLElement | null;
+    const handle  = root.querySelector('.bas-handle')   as HTMLElement | null;
+    const hint    = root.querySelector('.bas-hint')     as HTMLElement | null;
+
+    if (!clip || !clipImg || !divider || !handle) return;
+
+    let dragging = false;
+    let rafId    = 0;
+
+    function syncImageWidth(): void {
+      clipImg.style.width = root.offsetWidth + 'px';
+    }
+    syncImageWidth();
+
+    const ro = new ResizeObserver(syncImageWidth);
+    ro.observe(root);
+
+    function setPosition(clientX: number): void {
+      const rect = root.getBoundingClientRect();
+      const pct  = clamp(((clientX - rect.left) / rect.width) * 100, 1, 99);
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const val           = pct + '%';
+        clip.style.width    = val;
+        divider.style.left  = val;
+        if (hint) hint.style.left = `calc(${val} - 24px)`;
+      });
+    }
+
+    // Mouse
+    root.addEventListener('mousedown', (e: MouseEvent) => {
+      dragging = true;
+      handle.style.transform = 'translate(-50%,-50%) scale(1.12)';
+      if (hint) hint.style.opacity = '1';
+      setPosition(e.clientX);
+      e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', (e: MouseEvent) => {
+      if (dragging) setPosition(e.clientX);
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      handle.style.transform = '';
+      if (hint) hint.style.opacity = '0';
+    });
+
+    // Touch
+    root.addEventListener('touchstart', (e: TouchEvent) => {
+      dragging = true;
+      handle.style.transform = 'translate(-50%,-50%) scale(1.12)';
+      setPosition(e.touches[0].clientX);
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e: TouchEvent) => {
+      if (dragging) setPosition(e.touches[0].clientX);
+    }, { passive: true });
+
+    window.addEventListener('touchend', () => {
+      if (!dragging) return;
+      dragging = false;
+      handle.style.transform = '';
+    });
+
+    // Keyboard
+    root.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      const cur  = parseFloat(divider.style.left) || Number(root.dataset.initial ?? 50);
+      const step = e.shiftKey ? 10 : 2;
+      const next = clamp(cur + (e.key === 'ArrowRight' ? step : -step), 1, 99);
+      const val  = next + '%';
+      clip.style.width   = val;
+      divider.style.left = val;
+      if (hint) hint.style.left = `calc(${val} - 24px)`;
+    });
+  }
+
+  document.querySelectorAll('.bas-root').forEach(el => initSlider(el as HTMLElement));
+</script>
+
+<style>
+  .bas-root:focus-visible {
+    outline: 2px solid #b8965a;
+    outline-offset: 2px;
+  }
+
+</style>

@@ -1,0 +1,79 @@
+---
+import { getLocale, useTranslations } from '../lib/i18n';
+
+interface Props {
+  financials: {
+    asking_price_gel:           number;
+    renovation_estimate_gel:    number;
+    post_reno_market_value_gel: number;
+  };
+  size_sqm: number;
+}
+
+const { financials, size_sqm } = Astro.props;
+const t = useTranslations(getLocale(Astro.request));
+const { asking_price_gel, renovation_estimate_gel, post_reno_market_value_gel } = financials;
+
+const totalInvestment  = asking_price_gel + renovation_estimate_gel;
+const netEquityGain    = post_reno_market_value_gel - totalInvestment;
+const roiPct           = ((netEquityGain / totalInvestment) * 100).toFixed(1);
+const pricePerSqm      = Math.round(asking_price_gel / size_sqm);
+const afterPricePerSqm = Math.round(post_reno_market_value_gel / size_sqm);
+
+const gel = (n: number) =>
+  new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GEL',
+    notation: 'standard', maximumFractionDigits: 0 }).format(n).replace('GEL', '₾');
+---
+
+<div class="bg-warm-white border border-hairline border-concrete-dark overflow-hidden">
+  <div class="p-6 pb-5">
+    <div class="flex items-start justify-between mb-6">
+      <div>
+        <p class="text-label text-charcoal/40 mb-1">{t('finance.analysis')}</p>
+        <h3 class="font-serif text-2xl text-charcoal">{t('finance.investmentPotential')}</h3>
+      </div>
+      <span class="inline-block bg-gold/10 text-gold text-label px-3 py-1.5 border border-gold/20">
+        +{roiPct}% ROI
+      </span>
+    </div>
+
+    <dl class="space-y-0">
+      {[
+        { label: t('finance.askingPrice'),
+          main: gel(asking_price_gel),
+          sub: `${gel(pricePerSqm)} ${t('finance.perSqm')}` },
+        { label: t('finance.estRenovation'),
+          main: gel(renovation_estimate_gel),
+          sub: null },
+        { label: t('finance.totalInvestment'),
+          main: gel(totalInvestment),
+          sub: null },
+        { label: t('finance.postRenoValue'),
+          main: gel(post_reno_market_value_gel),
+          sub: `${gel(afterPricePerSqm)} ${t('finance.perSqm')}` },
+      ].map(row => (
+        <div class="flex items-baseline justify-between py-3.5 border-b border-hairline border-concrete-dark">
+          <dt class="text-label text-charcoal/50">{row.label}</dt>
+          <dd class="text-right">
+            <span class="font-sans text-base font-medium text-charcoal tabular-nums">{row.main}</span>
+            {row.sub && <span class="text-label text-charcoal/30 ml-1.5">{row.sub}</span>}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+
+  <!-- Net gain footer -->
+  <div class="bg-charcoal px-6 py-5 flex items-center justify-between">
+    <div>
+      <p class="text-label text-warm-white/50 mb-0.5">{t('finance.netEquityGain')}</p>
+      <p class="font-serif text-warm-white/50 text-sm italic">{t('finance.afterReno')}</p>
+    </div>
+    <div class="text-right">
+      <p class="font-sans text-2xl font-medium text-gold tabular-nums tracking-tight">
+        +{gel(netEquityGain)}
+      </p>
+      <p class="text-label text-warm-white/40 mt-0.5">{roiPct}% {t('finance.return')}</p>
+    </div>
+  </div>
+</div>

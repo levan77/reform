@@ -1,0 +1,277 @@
+---
+import { ALL_TAGS } from '../lib/types';
+import type { Listing } from '../lib/types';
+
+interface Props {
+  listing?: Listing;
+  action:   string;
+  method?:  string;
+}
+
+const { listing, action, method = 'POST' } = Astro.props;
+const L = listing;
+
+const v  = (key: keyof Listing) => L ? String(L[key] ?? '') : '';
+const vf = (key: keyof Listing['financials']) => L ? String(L.financials[key] ?? '') : '';
+const vk = (key: 'title' | 'address' | 'description') => L?.ka?.[key] ?? '';
+---
+
+<form method={method} action={action} class="space-y-8">
+
+  <!-- Basic info -->
+  <section class="bg-warm-white border border-hairline border-concrete-dark p-6 space-y-5">
+    <h2 class="font-serif text-2xl text-charcoal border-b border-hairline border-concrete-dark pb-3">
+      Basic Information
+    </h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      <div class="sm:col-span-2">
+        <label class="lf-label">Property Title</label>
+        <input name="title" type="text" required value={v('title')}
+               placeholder="e.g. Vera Stalinka — Apt. 14" class="lf-input" />
+      </div>
+
+      <div class="sm:col-span-2">
+        <label class="lf-label">Full Address</label>
+        <input name="address" type="text" required value={v('address')}
+               placeholder="14 Kostava St, Apt. 14, Vera" class="lf-input" />
+      </div>
+
+      <div>
+        <label class="lf-label">District</label>
+        <input name="district" type="text" required value={v('district')}
+               placeholder="Vera" class="lf-input" />
+      </div>
+
+      <div>
+        <label class="lf-label">Year Built</label>
+        <input name="year_built" type="number" min="1800" max="2000"
+               value={L?.year_built ?? ''} placeholder="1954" class="lf-input" />
+      </div>
+
+      <div>
+        <label class="lf-label">Size (m²)</label>
+        <input name="size_sqm" type="number" required min="1"
+               value={v('size_sqm')} placeholder="84" class="lf-input" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="lf-label">Floor</label>
+          <input name="floor" type="number" required min="1"
+                 value={v('floor')} placeholder="3" class="lf-input" />
+        </div>
+        <div>
+          <label class="lf-label">Total Floors</label>
+          <input name="total_floors" type="number" required min="1"
+                 value={v('total_floors')} placeholder="5" class="lf-input" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <div>
+      <label class="lf-label mb-2">Style Tags</label>
+      <div class="flex flex-wrap gap-2">
+        {ALL_TAGS.map(tag => (
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name={`tag_${tag}`}
+                   checked={L?.tags.includes(tag)}
+                   class="accent-charcoal w-3.5 h-3.5" />
+            <span class="text-label text-charcoal/70">{tag}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+
+    <!-- Featured -->
+    <label class="flex items-center gap-2.5 cursor-pointer">
+      <input type="checkbox" name="featured" checked={L?.featured}
+             class="accent-charcoal w-4 h-4" />
+      <span class="text-label text-charcoal/70">Mark as Featured</span>
+    </label>
+
+    <!-- Description -->
+    <div>
+      <label class="lf-label">Description (English)</label>
+      <textarea name="description" rows="4" required
+                placeholder="Describe the property's character, condition, and potential..."
+                class="lf-input resize-y">{v('description')}</textarea>
+    </div>
+  </section>
+
+  <!-- Georgian translations (optional) -->
+  <section class="bg-warm-white border border-hairline border-concrete-dark p-6 space-y-5">
+    <div class="border-b border-hairline border-concrete-dark pb-3">
+      <h2 class="font-serif text-2xl text-charcoal">ქართული თარგმანი</h2>
+      <p class="text-sm text-charcoal/50 mt-1">
+        Georgian translation (optional). If left blank, the English text is shown in both languages.
+      </p>
+    </div>
+
+    <div>
+      <label class="lf-label">სათაური · Title (Georgian)</label>
+      <input name="ka_title" type="text" value={vk('title')}
+             placeholder="ვერას სტალინკა — ბინა 14" class="lf-input" />
+    </div>
+
+    <div>
+      <label class="lf-label">მისამართი · Address (Georgian)</label>
+      <input name="ka_address" type="text" value={vk('address')}
+             placeholder="კოსტავას ქ. 14, ბინა 14, ვერა" class="lf-input" />
+    </div>
+
+    <div>
+      <label class="lf-label">აღწერა · Description (Georgian)</label>
+      <textarea name="ka_description" rows="4"
+                placeholder="ობიექტის აღწერა ქართულად..."
+                class="lf-input resize-y">{vk('description')}</textarea>
+    </div>
+  </section>
+
+  <!-- Images -->
+  <section class="bg-warm-white border border-hairline border-concrete-dark p-6 space-y-5">
+    <h2 class="font-serif text-2xl text-charcoal border-b border-hairline border-concrete-dark pb-3">
+      Images
+    </h2>
+    <p class="text-sm text-charcoal/50">
+      Enter image URLs (Cloudflare Images, Unsplash, or any direct link).
+      For multiple before/after shots, put one URL per line.
+    </p>
+
+    <div>
+      <label class="lf-label">Cover Image URL</label>
+      <input name="cover" type="url" required value={L?.images.cover ?? ''}
+             placeholder="https://..." class="lf-input" />
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      <div>
+        <label class="lf-label">Before Images (one URL per line)</label>
+        <textarea name="before_urls" rows="4" required
+                  placeholder="https://before-photo-1.jpg&#10;https://before-photo-2.jpg"
+                  class="lf-input resize-y font-mono text-xs">{L?.images.before.join('\n') ?? ''}</textarea>
+      </div>
+      <div>
+        <label class="lf-label">After / 3D Render Images (one URL per line)</label>
+        <textarea name="after_urls" rows="4" required
+                  placeholder="https://after-render-1.jpg&#10;https://after-render-2.jpg"
+                  class="lf-input resize-y font-mono text-xs">{L?.images.after.join('\n') ?? ''}</textarea>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      <div>
+        <label class="lf-label">Existing Floor Plan URL</label>
+        <input name="floor_plan_existing" type="url" required
+               value={L?.images.floor_plan_existing ?? ''}
+               placeholder="https://..." class="lf-input" />
+      </div>
+      <div>
+        <label class="lf-label">Optimised Floor Plan URL</label>
+        <input name="floor_plan_optimized" type="url" required
+               value={L?.images.floor_plan_optimized ?? ''}
+               placeholder="https://..." class="lf-input" />
+      </div>
+    </div>
+  </section>
+
+  <!-- Financials -->
+  <section class="bg-warm-white border border-hairline border-concrete-dark p-6 space-y-5">
+    <h2 class="font-serif text-2xl text-charcoal border-b border-hairline border-concrete-dark pb-3">
+      Financial Data <span class="font-sans text-base font-normal text-charcoal/40">(GEL ₾)</span>
+    </h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      <div>
+        <label class="lf-label">Asking Price (₾)</label>
+        <input name="asking_price" type="number" required min="0"
+               value={vf('asking_price_gel')} placeholder="290000" class="lf-input tabular-nums" />
+      </div>
+      <div>
+        <label class="lf-label">Renovation Estimate (₾)</label>
+        <input name="renovation_estimate" type="number" required min="0"
+               value={vf('renovation_estimate_gel')} placeholder="95000" class="lf-input tabular-nums" />
+      </div>
+      <div>
+        <label class="lf-label">Post-Reno Market Value (₾)</label>
+        <input name="post_reno_value" type="number" required min="0"
+               value={vf('post_reno_market_value_gel')} placeholder="520000" class="lf-input tabular-nums" />
+      </div>
+    </div>
+
+    <!-- Live ROI preview -->
+    <div id="roi-preview" class="bg-concrete px-4 py-3 text-sm text-charcoal/60">
+      Enter financial values above to preview ROI
+    </div>
+  </section>
+
+  <!-- Actions -->
+  <div class="flex items-center gap-4">
+    <button type="submit"
+            class="px-8 py-3 bg-charcoal text-warm-white text-label
+                   hover:bg-charcoal-light transition-colors">
+      {listing ? 'Save Changes' : 'Create Listing'}
+    </button>
+    <a href="/admin/dashboard" class="text-label text-charcoal/40 hover:text-charcoal transition-colors">
+      Cancel
+    </a>
+  </div>
+
+</form>
+
+<script>
+  // Live ROI calculator
+  const fields = ['asking_price', 'renovation_estimate', 'post_reno_value'];
+  const preview = document.getElementById('roi-preview')!;
+
+  function recalc() {
+    const ask   = Number((document.querySelector('[name="asking_price"]')    as HTMLInputElement).value);
+    const reno  = Number((document.querySelector('[name="renovation_estimate"]') as HTMLInputElement).value);
+    const value = Number((document.querySelector('[name="post_reno_value"]') as HTMLInputElement).value);
+
+    if (!ask || !reno || !value) {
+      preview.textContent = 'Enter financial values above to preview ROI';
+      return;
+    }
+
+    const invest = ask + reno;
+    const gain   = value - invest;
+    const roi    = ((gain / invest) * 100).toFixed(1);
+    const gel    = (n: number) => '₾' + n.toLocaleString('en-GB');
+
+    preview.innerHTML = `Total investment <strong>${gel(invest)}</strong> &nbsp;·&nbsp;
+      Net gain <strong class="${gain >= 0 ? 'text-green-700' : 'text-red-600'}">${gain >= 0 ? '+' : ''}${gel(gain)}</strong> &nbsp;·&nbsp;
+      ROI <strong class="${Number(roi) >= 0 ? 'text-green-700' : 'text-red-600'}">${roi}%</strong>`;
+  }
+
+  fields.forEach(name => {
+    document.querySelector(`[name="${name}"]`)?.addEventListener('input', recalc);
+  });
+  recalc();
+</script>
+
+<style>
+  .lf-label {
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 0.4rem;
+  }
+  .lf-input {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    border: 0.5px solid #d0cec9;
+    background: #fafaf9;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9375rem;
+    color: #1a1a1a;
+    outline: none;
+    transition: border-color 0.15s;
+    display: block;
+  }
+  .lf-input:focus { border-color: #1a1a1a; }
+</style>

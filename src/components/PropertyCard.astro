@@ -1,0 +1,90 @@
+---
+import type { Listing } from '../lib/types';
+import { useTranslations, translateTag, translateDistrict, type Locale, DEFAULT_LOCALE } from '../lib/i18n';
+
+interface Props { listing: Listing; locale?: Locale }
+const { listing: l, locale = DEFAULT_LOCALE } = Astro.props;
+const t = useTranslations(locale);
+
+const gel = (n: number) =>
+  new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GEL',
+    notation: 'compact', maximumFractionDigits: 0 }).format(n).replace('GEL', '₾');
+
+const equityGain =
+  l.financials.post_reno_market_value_gel -
+  l.financials.asking_price_gel -
+  l.financials.renovation_estimate_gel;
+---
+
+<article
+  class="group relative bg-warm-white border border-hairline border-concrete-dark
+         hover:border-charcoal/30 transition-colors duration-300 overflow-hidden"
+  data-property-tags={JSON.stringify(l.tags)}
+>
+  <!-- Cover -->
+  <a href={`/properties/${l.slug}`} class="block overflow-hidden aspect-[4/3] bg-concrete">
+    <img
+      src={l.images.cover}
+      alt={l.title}
+      class="w-full h-full object-cover transition-transform duration-700 ease-out-expo group-hover:scale-[1.03]"
+      loading="lazy"
+      decoding="async"
+    />
+  </a>
+
+  <div class="p-5 space-y-4">
+    <!-- Tags -->
+    <div class="flex flex-wrap gap-1.5">
+      {l.tags.map(tag => (
+        <span class="text-label text-charcoal/50 border border-hairline border-concrete-dark px-2.5 py-1">
+          {translateTag(tag, locale)}
+        </span>
+      ))}
+    </div>
+
+    <!-- Title -->
+    <div>
+      <h2 class="font-serif text-xl text-charcoal leading-snug">
+        <a href={`/properties/${l.slug}`} class="hover:text-charcoal/70 transition-colors">
+          {l.title}
+        </a>
+      </h2>
+      <p class="text-sm text-charcoal/50 mt-0.5">{l.address}</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="flex items-center gap-4 text-label text-charcoal/40 flex-wrap">
+      <span>{l.size_sqm} {t('unit.sqm')}</span>
+      <span class="w-px h-3 bg-concrete-dark"></span>
+      <span>{t('card.floor')} {l.floor}/{l.total_floors}</span>
+      {l.year_built && <>
+        <span class="w-px h-3 bg-concrete-dark"></span>
+        <span>{t('card.est')} {l.year_built}</span>
+      </>}
+    </div>
+
+    <!-- Price row -->
+    <div class="flex items-end justify-between pt-1">
+      <div>
+        <p class="text-label text-charcoal/40 mb-0.5">{t('card.askingPrice')}</p>
+        <p class="font-sans text-xl font-medium text-charcoal tabular-nums">
+          {gel(l.financials.asking_price_gel)}
+        </p>
+      </div>
+      <div class="text-right">
+        <p class="text-label text-charcoal/40 mb-0.5">{t('card.equityPotential')}</p>
+        <p class="font-sans text-base font-medium text-gold tabular-nums">
+          +{gel(equityGain)}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  {l.featured && (
+    <div class="absolute top-3 left-3">
+      <span class="text-label text-warm-white bg-charcoal/80 backdrop-blur-sm px-2.5 py-1">
+        {t('card.featured')}
+      </span>
+    </div>
+  )}
+</article>

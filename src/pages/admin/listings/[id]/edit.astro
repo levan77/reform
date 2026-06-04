@@ -1,0 +1,40 @@
+---
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import ListingForm from '../../../../components/ListingForm.astro';
+import { getListingById } from '../../../../lib/db';
+import { getKV } from '../../../../lib/runtime';
+
+const { id } = Astro.params;
+const listing = id ? await getListingById(getKV(Astro.locals), id) : undefined;
+
+if (!listing) return Astro.redirect('/admin/dashboard');
+---
+
+<AdminLayout title={`Edit — ${listing.title}`}>
+  <div class="mb-8">
+    <a href="/admin/dashboard" class="text-label text-charcoal/40 hover:text-charcoal transition-colors">
+      ← Back to Dashboard
+    </a>
+    <h1 class="font-serif text-4xl text-charcoal mt-2">Edit Listing</h1>
+    <p class="text-charcoal/50 mt-1">{listing.title}</p>
+  </div>
+
+  <ListingForm
+    listing={listing}
+    action={`/api/admin/listings/${listing.id}`}
+    method="POST"
+  />
+</AdminLayout>
+
+<script>
+  // Patch form to use PUT (Astro API routes support PUT natively via fetch,
+  // but form method="POST" + JS override is the HTML workaround)
+  const form = document.querySelector('form') as HTMLFormElement;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+    const res  = await fetch(form.action, { method: 'PUT', body: data });
+    if (res.redirected) window.location.href = res.url;
+    else window.location.href = '/admin/dashboard?updated=1';
+  });
+</script>

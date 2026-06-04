@@ -1,0 +1,52 @@
+---
+import '../styles/global.css';
+import { getLocale } from '../lib/i18n';
+
+interface Props {
+  title?:       string;
+  description?: string;
+  ogImage?:     string;
+}
+
+const locale = getLocale(Astro.request);
+
+const {
+  title       = locale === 'ka'
+    ? 'ReForma — თბილისის არქიტექტურული უძრავი ქონება'
+    : 'ReForma — Tbilisi Architectural Real Estate',
+  description = locale === 'ka'
+    ? 'აღმოაჩინეთ თბილისის ისტორიული ბინები, რომელთა ფარული პოტენციალი ზუსტი რემონტითაა გახსნილი.'
+    : 'Discover heritage apartments in Tbilisi with their hidden potential unlocked through precision renovation.',
+  ogImage,
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://reforma.ge');
+---
+
+<!doctype html>
+<html lang={locale}>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+
+  <!-- OG / Social -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:title"       content={title} />
+  <meta property="og:description" content={description} />
+  {ogImage && <meta property="og:image" content={ogImage} />}
+
+  <!-- Fonts preconnect -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <!-- Favicon placeholder -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <title>{title}</title>
+</head>
+<body>
+  <slot />
+</body>
+</html>

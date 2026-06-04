@@ -1,0 +1,85 @@
+---
+import { ALL_TAGS } from '../lib/types';
+import { getLocale, useTranslations, translateTag } from '../lib/i18n';
+
+const locale = getLocale(Astro.request);
+const t      = useTranslations(locale);
+---
+
+<div class="pf-root" role="group" aria-label={t('filters.label')}>
+  <p class="text-label text-charcoal/40 mb-3">{t('filters.label')}</p>
+  <div class="flex flex-wrap gap-2">
+    <button
+      class="pf-tag pf-tag--all text-label px-4 py-2 border border-hairline rounded-sm
+             transition-colors duration-200"
+      data-tag="all"
+      aria-pressed="true"
+    >
+      {t('filters.all')}
+    </button>
+    {ALL_TAGS.map(tag => (
+      <button
+        class="pf-tag text-label px-4 py-2 border border-hairline rounded-sm
+               transition-colors duration-200"
+        data-tag={tag}
+        aria-pressed="false"
+      >
+        {translateTag(tag, locale)}
+      </button>
+    ))}
+  </div>
+</div>
+
+<script>
+  const root        = document.querySelector<HTMLElement>('.pf-root')!;
+  const tags        = root.querySelectorAll<HTMLButtonElement>('.pf-tag');
+  const cards       = document.querySelectorAll<HTMLElement>('[data-property-tags]');
+
+  function applyActive(active: Set<string>) {
+    const allSelected = active.has('all');
+
+    tags.forEach(btn => {
+      const t      = btn.dataset.tag!;
+      const pressed = allSelected ? t === 'all' : active.has(t);
+      btn.setAttribute('aria-pressed', String(pressed));
+      btn.classList.toggle('bg-charcoal',        pressed);
+      btn.classList.toggle('text-warm-white',    pressed);
+      btn.classList.toggle('border-charcoal',    pressed);
+      btn.classList.toggle('text-charcoal/60',  !pressed);
+      btn.classList.toggle('border-concrete-dark', !pressed);
+      btn.classList.toggle('hover:border-charcoal/40', !pressed);
+    });
+
+    cards.forEach(card => {
+      if (allSelected) {
+        card.hidden = false;
+        return;
+      }
+      const cardTags: string[] = JSON.parse(card.dataset.propertyTags ?? '[]');
+      card.hidden = ![...active].some(t => cardTags.includes(t));
+    });
+  }
+
+  let active = new Set(['all']);
+  applyActive(active);
+
+  tags.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = btn.dataset.tag!;
+
+      if (t === 'all') {
+        active = new Set(['all']);
+      } else {
+        active.delete('all');
+        if (active.has(t)) {
+          active.delete(t);
+          if (active.size === 0) active.add('all');
+        } else {
+          active.add(t);
+        }
+      }
+
+      applyActive(active);
+    });
+  });
+</script>

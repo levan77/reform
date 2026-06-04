@@ -1,0 +1,159 @@
+---
+import { getLocale, useTranslations } from '../lib/i18n';
+
+const locale = getLocale(Astro.request);
+const t      = useTranslations(locale);
+
+const links = [
+  { label: t('nav.catalog'), href: '/#catalog' },
+  { label: t('nav.process'), href: '/#process' },
+  { label: t('nav.about'),   href: '/about'    },
+  { label: t('nav.contact'), href: '/contact'  },
+];
+
+const { transparent = false } = Astro.props;
+
+// Build the language-switch URL: toggle to the other locale, return to current page
+const otherLocale = locale === 'ka' ? 'en' : 'ka';
+const currentPath = Astro.url.pathname + Astro.url.search;
+const switchHref  = `/api/lang?to=${otherLocale}&from=${encodeURIComponent(currentPath)}`;
+---
+
+<header
+  id="site-header"
+  class:list={[
+    'fixed top-0 inset-x-0 z-50 transition-all duration-500',
+    transparent ? 'bg-transparent' : 'bg-warm-white/90 backdrop-blur-md border-b border-hairline border-concrete-dark',
+  ]}
+  data-transparent={transparent}
+>
+  <nav
+    class="max-w-screen-xl mx-auto px-6 md:px-10 h-16 flex items-center justify-between"
+    aria-label="Primary navigation"
+  >
+    <!-- Logo -->
+    <a href="/" class="flex items-baseline gap-2 group" aria-label="ReForma home">
+      <span class="font-serif text-2xl text-charcoal tracking-tight leading-none">
+        Re<em class="not-italic text-gold">Forma</em>
+      </span>
+      <span class="text-label text-charcoal/40 hidden sm:inline">{t('nav.tbilisi')}</span>
+    </a>
+
+    <!-- Desktop links -->
+    <ul class="hidden md:flex items-center gap-8" role="list">
+      {links.map(({ label, href }) => (
+        <li>
+          <a
+            href={href}
+            class="text-label text-charcoal/60 hover:text-charcoal transition-colors duration-200"
+          >
+            {label}
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <div class="flex items-center gap-3 md:gap-4">
+      <!-- Language switcher -->
+      <a
+        href={switchHref}
+        class="inline-flex items-center gap-1.5 px-2.5 py-2 text-label text-charcoal/60
+               hover:text-charcoal transition-colors duration-200 border border-hairline border-concrete-dark
+               hover:border-charcoal/30"
+        aria-label={t('nav.switchToFull')}
+        title={t('nav.switchToFull')}
+      >
+        <!-- Globe icon -->
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.1"/>
+          <path d="M1.75 8h12.5M8 1.75c1.8 1.6 2.8 3.9 2.8 6.25S9.8 12.65 8 14.25c-1.8-1.6-2.8-3.9-2.8-6.25S6.2 3.35 8 1.75Z"
+                stroke="currentColor" stroke-width="1.1"/>
+        </svg>
+        <span>{t('nav.switchTo')}</span>
+      </a>
+
+      <!-- CTA -->
+      <a
+        href="/#catalog"
+        class="hidden md:inline-flex items-center gap-2 px-5 py-2.5 bg-charcoal text-warm-white text-label
+               hover:bg-charcoal-light transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold"
+      >
+        {t('nav.viewProperties')}
+      </a>
+
+      <!-- Mobile hamburger -->
+      <button
+        id="mobile-menu-btn"
+        class="md:hidden w-10 h-10 flex flex-col justify-center items-center gap-1.5"
+        aria-label={t('nav.toggleMenu')}
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+      >
+        <span class="block w-5 h-px bg-charcoal transition-transform duration-300" id="ham-top"></span>
+        <span class="block w-5 h-px bg-charcoal transition-opacity duration-300"   id="ham-mid"></span>
+        <span class="block w-5 h-px bg-charcoal transition-transform duration-300" id="ham-bot"></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile menu -->
+  <div
+    id="mobile-menu"
+    class="md:hidden hidden bg-warm-white border-t border-hairline border-concrete-dark"
+    aria-hidden="true"
+  >
+    <ul class="flex flex-col px-6 py-4 gap-1" role="list">
+      {links.map(({ label, href }) => (
+        <li>
+          <a
+            href={href}
+            class="block py-3 text-label text-charcoal/70 hover:text-charcoal border-b border-hairline border-concrete-dark last:border-0"
+          >
+            {label}
+          </a>
+        </li>
+      ))}
+      <li class="pt-2">
+        <a
+          href="/#catalog"
+          class="block w-full text-center py-3 bg-charcoal text-warm-white text-label"
+        >
+          {t('nav.viewProperties')}
+        </a>
+      </li>
+    </ul>
+  </div>
+</header>
+
+<script>
+  const btn    = document.getElementById('mobile-menu-btn')!;
+  const menu   = document.getElementById('mobile-menu')!;
+  const hamTop = document.getElementById('ham-top')!;
+  const hamMid = document.getElementById('ham-mid')!;
+  const hamBot = document.getElementById('ham-bot')!;
+  const header = document.getElementById('site-header')!;
+
+  // Toggle mobile menu
+  btn.addEventListener('click', () => {
+    const open = menu.classList.toggle('hidden') === false;
+    btn.setAttribute('aria-expanded', String(open));
+    menu.setAttribute('aria-hidden',  String(!open));
+    hamTop.style.transform = open ? 'translateY(5px) rotate(45deg)'  : '';
+    hamMid.style.opacity   = open ? '0' : '1';
+    hamBot.style.transform = open ? 'translateY(-5px) rotate(-45deg)' : '';
+  });
+
+  // Scroll-aware transparency (only when header starts transparent)
+  if (header.dataset.transparent === 'true') {
+    const onScroll = () => {
+      const scrolled = window.scrollY > 40;
+      header.classList.toggle('bg-warm-white/90',  scrolled);
+      header.classList.toggle('backdrop-blur-md',   scrolled);
+      header.classList.toggle('border-b',           scrolled);
+      header.classList.toggle('border-concrete-dark', scrolled);
+      header.classList.toggle('bg-transparent',    !scrolled);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
+</script>

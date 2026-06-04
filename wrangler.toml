@@ -1,0 +1,25 @@
+# Cloudflare Pages configuration for ReForma
+#
+# This file is read by:
+#   • `astro dev`            — local KV simulation via platformProxy (id below is ignored locally)
+#   • Cloudflare Pages build — when deploying from Git, Pages reads this for bindings
+#
+# Before deploying, create a KV namespace and paste its id below:
+#   npm run kv:create        (or: npx wrangler kv namespace create LISTINGS)
+
+name = "reforma"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "./dist"
+
+# ─── KV binding: stores all property listings ────────────────────────────────
+[[kv_namespaces]]
+binding = "LISTINGS"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+# ─── Non-secret defaults for LOCAL dev only ──────────────────────────────────
+# Real production values must be set in the Cloudflare Pages dashboard
+# (Settings → Environment variables) — never commit real secrets here.
+[vars]
+ADMIN_PASSWORD = "reforma2024"
+SESSION_SECRET = "reforma-local-dev-secret-change-in-production"

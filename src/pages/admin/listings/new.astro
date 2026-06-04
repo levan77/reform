@@ -1,0 +1,15 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import ListingForm from '../../../components/ListingForm.astro';
+---
+
+<AdminLayout title="New Listing">
+  <div class="mb-8">
+    <a href="/admin/dashboard" class="text-label text-charcoal/40 hover:text-charcoal transition-colors">
+      ← Back to Dashboard
+    </a>
+    <h1 class="font-serif text-4xl text-charcoal mt-2">Add New Listing</h1>
+  </div>
+
+  <ListingForm action="/api/admin/listings" />
+</AdminLayout>

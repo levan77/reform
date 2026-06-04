@@ -1,0 +1,133 @@
+---
+import { getLocale, useTranslations } from '../lib/i18n';
+
+interface Props {
+  existingPlanSrc:  string;
+  optimizedPlanSrc: string;
+  alt?: string;
+}
+
+const {
+  existingPlanSrc,
+  optimizedPlanSrc,
+  alt = 'Property floor plan',
+} = Astro.props;
+
+const t = useTranslations(getLocale(Astro.request));
+---
+
+<div class="fps-root" data-active="existing">
+  <!-- Tab bar -->
+  <div
+    class="flex border-b border-hairline border-concrete-dark"
+    role="tablist"
+    aria-label="Floor plan views"
+  >
+    <button
+      class="fps-tab relative px-5 py-3 text-label transition-colors duration-200"
+      data-tab="existing"
+      role="tab"
+      aria-selected="true"
+      aria-controls="fps-panel-existing"
+      id="fps-btn-existing"
+    >
+      {t('floorplan.existing')}
+    </button>
+    <button
+      class="fps-tab relative px-5 py-3 text-label transition-colors duration-200"
+      data-tab="optimized"
+      role="tab"
+      aria-selected="false"
+      aria-controls="fps-panel-optimized"
+      id="fps-btn-optimized"
+    >
+      <span class="inline-flex items-center gap-1.5">
+        {t('floorplan.optimized')}
+        <span class="inline-block w-1.5 h-1.5 rounded-full bg-gold"></span>
+      </span>
+    </button>
+  </div>
+
+  <!-- Panels -->
+  <div class="relative bg-concrete rounded-b-sm overflow-hidden" style="aspect-ratio: 4/3;">
+    <div
+      id="fps-panel-existing"
+      class="fps-panel absolute inset-0 transition-opacity duration-300"
+      role="tabpanel"
+      aria-labelledby="fps-btn-existing"
+    >
+      <img
+        src={existingPlanSrc}
+        alt={`Existing: ${alt}`}
+        class="w-full h-full object-contain p-6"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+
+    <div
+      id="fps-panel-optimized"
+      class="fps-panel absolute inset-0 transition-opacity duration-300 opacity-0 pointer-events-none"
+      role="tabpanel"
+      aria-labelledby="fps-btn-optimized"
+      aria-hidden="true"
+    >
+      <img
+        src={optimizedPlanSrc}
+        alt={`ReForma optimized: ${alt}`}
+        class="w-full h-full object-contain p-6"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.fps-root').forEach(root => {
+    const tabs   = root.querySelectorAll<HTMLButtonElement>('.fps-tab');
+    const panels = root.querySelectorAll<HTMLElement>('.fps-panel');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab!;
+
+        tabs.forEach(t => {
+          const active = t.dataset.tab === target;
+          t.setAttribute('aria-selected', String(active));
+          t.classList.toggle('text-charcoal',   active);
+          t.classList.toggle('text-charcoal/40', !active);
+        });
+
+        panels.forEach(panel => {
+          const show = panel.id === `fps-panel-${target}`;
+          panel.classList.toggle('opacity-0',       !show);
+          panel.classList.toggle('pointer-events-none', !show);
+          panel.setAttribute('aria-hidden', String(!show));
+        });
+
+        root.dataset.active = target;
+      });
+    });
+
+    // Initialise active tab styling
+    tabs.forEach(t => {
+      const active = t.dataset.tab === root.dataset.active;
+      t.classList.toggle('text-charcoal',    active);
+      t.classList.toggle('text-charcoal/40', !active);
+    });
+  });
+</script>
+
+<style>
+  /* Active tab underline indicator */
+  .fps-tab[aria-selected="true"]::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1.5px;
+    background: #1a1a1a;
+  }
+</style>

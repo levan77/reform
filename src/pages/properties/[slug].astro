@@ -1,0 +1,143 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Navigation from '../../components/Navigation.astro';
+import BeforeAfterSlider from '../../components/BeforeAfterSlider.astro';
+import FloorPlanSwitcher from '../../components/FloorPlanSwitcher.astro';
+import FinancialDashboard from '../../components/FinancialDashboard.astro';
+import { getListing } from '../../lib/db';
+import { getKV } from '../../lib/runtime';
+import { getLocale, useTranslations, translateTag, localizeListing } from '../../lib/i18n';
+
+const locale = getLocale(Astro.request);
+const t      = useTranslations(locale);
+
+const { slug } = Astro.params;
+const raw      = slug ? await getListing(getKV(Astro.locals), slug) : undefined;
+if (!raw) return Astro.redirect('/404');
+const l = localizeListing(raw, locale);
+---
+
+<BaseLayout
+  title={`${l.title} — ReForma`}
+  description={`${l.size_sqm}${t('unit.sqm')} ${l.tags[0] ? translateTag(l.tags[0], locale) : ''} — ${l.district}`}
+  ogImage={l.images.cover}
+>
+  <Navigation />
+
+  <main class="pt-16">
+    <section class="max-w-screen-xl mx-auto px-6 md:px-10 py-12 md:py-16">
+
+      <!-- Breadcrumb -->
+      <nav class="mb-8" aria-label="Breadcrumb">
+        <ol class="flex items-center gap-2 text-label text-charcoal/40">
+          <li><a href="/" class="hover:text-charcoal transition-colors">{t('detail.home')}</a></li>
+          <li aria-hidden="true">/</li>
+          <li><a href="/#catalog" class="hover:text-charcoal transition-colors">{t('detail.catalog')}</a></li>
+          <li aria-hidden="true">/</li>
+          <li class="text-charcoal/70" aria-current="page">{l.title}</li>
+        </ol>
+      </nav>
+
+      <!-- Header -->
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+        <div>
+          <div class="flex flex-wrap gap-1.5 mb-3">
+            {l.tags.map(tag => (
+              <span class="text-label text-charcoal/50 border border-hairline border-concrete-dark px-2.5 py-1">
+                {translateTag(tag, locale)}
+              </span>
+            ))}
+          </div>
+          <h1 class="font-serif text-4xl md:text-6xl text-charcoal leading-tight">{l.title}</h1>
+          <p class="text-charcoal/50 mt-2">{l.address}</p>
+        </div>
+        <div class="flex items-center gap-5 text-label text-charcoal/40 shrink-0 flex-wrap">
+          <span>{l.size_sqm} {t('unit.sqm')}</span>
+          <span class="w-px h-3 bg-concrete-dark"></span>
+          <span>{t('detail.floor')} {l.floor} {t('detail.of')} {l.total_floors}</span>
+          {l.year_built && <>
+            <span class="w-px h-3 bg-concrete-dark"></span>
+            <span>{t('detail.built')} {l.year_built}</span>
+          </>}
+        </div>
+      </div>
+
+      <!-- Main grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 lg:gap-12">
+
+        <!-- Left column -->
+        <div class="space-y-8">
+
+          <!-- Before/After slider -->
+          <div>
+            <p class="text-label text-charcoal/40 mb-3">{t('detail.dragToCompare')}</p>
+            <BeforeAfterSlider
+              beforeSrc={l.images.before[0] ?? ''}
+              afterSrc={l.images.after[0]  ?? ''}
+              alt={l.title}
+              initialPosition={45}
+              aspectRatio="16/9"
+            />
+          </div>
+
+          <!-- Description -->
+          <div class="prose prose-sm max-w-none text-charcoal/70 leading-relaxed">
+            <p>{l.description}</p>
+          </div>
+
+          <!-- Floor plan switcher -->
+          <div>
+            <p class="text-label text-charcoal/40 mb-3">{t('detail.layout')}</p>
+            <FloorPlanSwitcher
+              existingPlanSrc={l.images.floor_plan_existing}
+              optimizedPlanSrc={l.images.floor_plan_optimized}
+              alt={l.title}
+            />
+          </div>
+
+          <!-- Additional before/after pairs -->
+          {l.images.before.length > 1 && (
+            <div class="space-y-3">
+              <p class="text-label text-charcoal/40">{t('detail.additionalViews')}</p>
+              {l.images.before.slice(1).map((before, i) => (
+                <BeforeAfterSlider
+                  beforeSrc={before}
+                  afterSrc={l.images.after[i + 1] ?? l.images.after[0] ?? ''}
+                  alt={`${l.title} — ${t('detail.view')} ${i + 2}`}
+                  aspectRatio="16/9"
+                  sliderId={`bas-extra-${i}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <!-- Right column — sticky financial dashboard -->
+        <aside class="lg:sticky lg:top-24 self-start space-y-4">
+          <FinancialDashboard financials={l.financials} size_sqm={l.size_sqm} />
+
+          <a href={`mailto:hello@reforma.ge?subject=${encodeURIComponent(l.title)}`}
+             class="block w-full text-center py-4 bg-charcoal text-warm-white text-label
+                    hover:bg-charcoal-light transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold">
+            {t('detail.enquire')}
+          </a>
+          <p class="text-label text-charcoal/30 text-center">
+            {t('detail.renovationNote')}
+          </p>
+        </aside>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-hairline border-concrete-dark bg-warm-white mt-16">
+    <div class="max-w-screen-xl mx-auto px-6 md:px-10 py-10 flex flex-col md:flex-row items-start justify-between gap-6">
+      <div>
+        <p class="font-serif text-xl text-charcoal mb-1">Re<em class="not-italic text-gold">Forma</em></p>
+        <p class="text-label text-charcoal/40">{t('footer.tagline')}</p>
+      </div>
+      <p class="text-label text-charcoal/30">© {new Date().getFullYear()} ReForma. {t('footer.rights')}</p>
+    </div>
+  </footer>
+</BaseLayout>
